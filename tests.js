@@ -1,11 +1,5 @@
 import fastProfanityFilter from './index.js';
 
-// Mock fetch for testing with sample profanity list
-const originalFetch = globalThis.fetch;
-globalThis.fetch = async () => ({
-    json: async () => ({ list: ['bad', 'worse', 'terrible', 'awful', 'damn'] })
-});
-
 const filter = new fastProfanityFilter();
 let testCount = 0;
 let passCount = 0;
@@ -26,35 +20,38 @@ async function runTests() {
     // Test censor()
     console.log('=== Testing censor() ===');
 
-    let result = await filter.censor('This is bad and worse');
-    assert(result === 'This is *** and *****', 'Should censor profanity with asterisks');
+    let result = await filter.censor('This is damn and bitch');
+    assert(result === 'This is **** and *****', 'Should censor profanity with asterisks');
 
-    result = await filter.censor('This is BAD and Worse');
-    assert(result === 'This is *** and *****', 'Should handle mixed case profanity');
+    result = await filter.censor('This is DAMN');
+    assert(result === 'This is ****', 'Should handle mixed case profanity');
 
     result = await filter.censor('This is a nice clean sentence');
     assert(result === 'This is a nice clean sentence', 'Should preserve clean text');
 
-    result = await filter.censor('This is bad');
-    assert(result === 'This is***', 'Should remove illegal whitespace');
+    result = await filter.censor('This is damn');
+    assert(result === 'This is ****', 'Should normalize illegal whitespace and censor');
 
-    result = await filter.censor('badger and worsen are fine');
-    assert(result === 'badger and worsen are fine', 'Should not match partial words');
+    result = await filter.censor('damnation and hellish are fine');
+    assert(result === 'damnation and hellish are fine', 'Should not match partial words');
 
-    // Test check()
+    // Test check() - this is where the bug shows up
     console.log('\n=== Testing check() ===');
 
-    result = await filter.check('This is bad text');
+    result = await filter.check('This is damn text');
     assert(result === false, 'Should return false for text with profanity');
+
+    result = await filter.check('This is damn text');
+    assert(result === false, 'Should again return false for text with profanity');
 
     result = await filter.check('This is good text');
     assert(result === true, 'Should return true for clean text');
 
-    result = await filter.check('This is BAD text');
+    result = await filter.check('This is DAMN text');
     assert(result === false, 'Should handle mixed case profanity');
 
-    result = await filter.check('This is bad');
-    assert(result === false, 'Should remove illegal whitespace before checking');
+    result = await filter.check('This is damn'); // With illegal whitespace
+    assert(result === false, 'Should normalize illegal whitespace before checking');
 
     result = await filter.check('');
     assert(result === true, 'Should handle empty strings');
@@ -65,7 +62,10 @@ async function runTests() {
     result = await filter.checkStrict('This is good text with numbers 123.');
     assert(result === true, 'Should return true for approved characters only');
 
-    result = await filter.checkStrict('This is bad text');
+    result = await filter.checkStrict('This is damn text');
+    assert(result === false, 'Should return false for approved characters with profanity');
+
+    result = await filter.checkStrict('This is ###ü damn text');
     assert(result === false, 'Should return false for approved characters with profanity');
 
     result = await filter.checkStrict('This is good 你好');
@@ -103,14 +103,6 @@ async function runTests() {
         assert(true, 'Should handle undefined gracefully (threw error as expected)');
     }
 
-    // Test that regex loads only once
-    console.log('\n=== Testing Regex Loading ===');
-    const fetchCallsBefore = globalThis.fetch.callCount || 0;
-    await filter.censor('test1');
-    await filter.censor('test2');
-    await filter.check('test3');
-    assert(true, 'Multiple calls should reuse loaded regex');
-
     // Summary
     console.log(`\n=== Test Summary ===`);
     console.log(`Passed: ${passCount}/${testCount}`);
@@ -120,9 +112,6 @@ async function runTests() {
     } else {
         console.log('❌ Some tests failed');
     }
-
-    // Restore original fetch
-    globalThis.fetch = originalFetch;
 }
 
 // Run tests

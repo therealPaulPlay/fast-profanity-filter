@@ -6,14 +6,28 @@ class fastProfanityFilter {
     async #loadCheckProfanityRegex() {
         if (!this.#profanityRegex) {
             try {
-                const response = await fetch('./profanity-list.json');
-                const data = await response.json();
-                const escaped = data.list.map(word => word.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'));
+                let data;
+                if (typeof window !== 'undefined') {
+                    // Browser - use fetch
+                    const response = await fetch('./profanity-list.json');
+                    data = await response.json();
+                } else {
+                    // Node.js - use dynamic import with correct syntax
+                    const module = await import('./profanity-list.json', { with: { type: 'json' } });
+                    data = module.default;
+                }
+                const escaped = data.map(word => word.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'));
                 this.#profanityRegex = new RegExp(`\\b(${escaped.join('|')})\\b`, 'gi');
             } catch (error) {
                 console.error('Error loading profanity list:', error);
             }
+        } else {
+            this.#profanityRegex.lastIndex = 0; // Reset state before test
         }
+    }
+
+    #cleanIllegalWhitespace(text) {
+        return text.replace(this.#illegalWhitespace, ' ');
     }
 
     /**
@@ -24,7 +38,7 @@ class fastProfanityFilter {
         if (!text || typeof text !== 'string') return text || '';
         await this.#loadCheckProfanityRegex();
         try {
-            const cleaned = text.replace(this.#illegalWhitespace, '');
+            const cleaned = this.#cleanIllegalWhitespace(text);
             return cleaned.replace(this.#profanityRegex, match => '*'.repeat(match.length));
         } catch (error) {
             console.error("Error censoring text:", error);
@@ -41,11 +55,11 @@ class fastProfanityFilter {
         if (!text || typeof text !== 'string') return text === ''; // Empty string is approved
         await this.#loadCheckProfanityRegex();
         try {
-            const cleaned = text.replace(this.#illegalWhitespace, '');
-            return !this.#profanityRegex?.test(cleaned); // true = approved, false = disapproved
+            const cleaned = this.#cleanIllegalWhitespace(text);
+            return !this.#profanityRegex?.test(cleaned);
         } catch (error) {
             console.error("Error checking text:", error);
-            return false; // Fail safe - disapprove on error
+            return false; // Disapprove on error
         }
     }
 
