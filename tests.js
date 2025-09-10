@@ -26,6 +26,9 @@ async function runTests() {
     result = await filter.censor('This is DAMN');
     assert(result === 'This is ****', 'Should handle mixed case profanity');
 
+    result = await filter.censor('Hey, this pen is amazing! I love your hellish dog, even though he kinda sucks at basketball.');
+    assert(result === 'Hey, this pen is amazing! I love your hellish dog, even though he kinda sucks at basketball.', 'Should keep normal sentences the same');
+
     result = await filter.censor('This is a nice clean sentence');
     assert(result === 'This is a nice clean sentence', 'Should preserve clean text');
 
@@ -34,6 +37,10 @@ async function runTests() {
 
     result = await filter.censor('banal and hellish are fine');
     assert(result === 'banal and hellish are fine', 'Should not match partial words');
+
+    result = await filter.censor('You are a b i t c h!');
+    console.log(result);
+    assert(result === 'You are a *****!', 'Should censor oddly spaced profanity');
 
     // Test check() - this is where the bug shows up
     console.log('\n=== Testing check() ===');
@@ -51,10 +58,22 @@ async function runTests() {
     assert(result === false, 'Should handle mixed case profanity');
 
     result = await filter.check('This is damn'); // With illegal whitespace
-    assert(result === false, 'Should normalize illegal whitespace before checking');
+    assert(result === false, 'Should normalize illegal whitespace before checking and block profanity');
+
+    result = await filter.check('This is good'); // With illegal whitespace
+    assert(result === true, 'Should normalize illegal whitespace before checking and allow good words');
 
     result = await filter.check('');
     assert(result === true, 'Should handle empty strings');
+
+    result = await filter.check('you are a f u ck e r');
+    assert(result === false, 'Should check short isolated parts for profanity');
+
+    result = await filter.check('b i t c h y o u a r e a f a g g o t');
+    assert(result === false, 'Should check short isolated parts for profanity');
+
+    result = await filter.check('This pen is cool!');
+    assert(result === true, 'Should not detect isolated parts that are actual words');
 
     // Test checkStrict()
     console.log('\n=== Testing checkStrict() ===');
