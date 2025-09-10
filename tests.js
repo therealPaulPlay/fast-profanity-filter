@@ -32,8 +32,8 @@ async function runTests() {
     result = await filter.censor('This is damn');
     assert(result === 'This is ****', 'Should normalize illegal whitespace and censor');
 
-    result = await filter.censor('damnation and hellish are fine');
-    assert(result === 'damnation and hellish are fine', 'Should not match partial words');
+    result = await filter.censor('banal and hellish are fine');
+    assert(result === 'banal and hellish are fine', 'Should not match partial words');
 
     // Test check() - this is where the bug shows up
     console.log('\n=== Testing check() ===');
