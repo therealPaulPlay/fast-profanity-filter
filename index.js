@@ -145,4 +145,10 @@ class fastProfanityFilter {
     }
 }
 
-export default fastProfanityFilter;
+// Single shared instance
+const instance = new fastProfanityFilter();
+
+// Export clean function interface
+export const censor = (text) => instance.censor(text);
+export const check = (text) => instance.check(text);
+export const checkStrict = (text) => instance.checkStrict(text);
