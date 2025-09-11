@@ -33,83 +33,52 @@ class fastProfanityFilter {
 
     #concatenateSpacedProfanity(text) {
         const words = text.split(/\s+/);
-        let result = [...words];
-        let i = 0;
 
-        while (i < result.length) {
-            if (result[i].length <= 2 && result[i].length > 0) {
-                const sequence = [];
-                let j = i;
+        for (let i = 0; i < words.length; i++) {
+            if (words[i].length > 2 || words[i].length === 0) continue;
 
-                while (j < result.length && result[j].length <= 2 && result[j].length > 0) {
-                    sequence.push(result[j]);
-                    j++;
+            // Find end of short word sequence
+            const start = i;
+            while (i < words.length && words[i].length <= 2 && words[i].length > 0) i++;
+
+            if (i - start < 3) continue; // Need 3+ words
+
+            const sequence = words.slice(start, i);
+            const joined = sequence.join('').toLowerCase();
+            const matches = [...joined.matchAll(this.#profanityRegexMatchPartial)];
+
+            if (matches.length > 0) {
+                const parts = [];
+                let pos = 0;
+
+                matches.forEach(match => {
+                    // Add words before profanity
+                    let charCount = pos;
+                    sequence.forEach(word => {
+                        if (charCount >= match.index) return;
+                        if (charCount + word.length <= match.index) {
+                            parts.push(word);
+                            charCount += word.length;
+                        }
+                    });
+
+                    parts.push(match[0]);
+                    pos = match.index + match[0].length;
+                });
+
+                // Attach trailing text to last word
+                if (pos < joined.length && parts.length) {
+                    parts[parts.length - 1] += joined.substring(pos);
                 }
 
-                if (sequence.length >= 3) {
-                    const joined = sequence.join('').toLowerCase();
-
-                    // Find ALL profanity matches
-                    const matches = [];
-                    let match;
-                    this.#profanityRegexMatchPartial.lastIndex = 0;
-                    while ((match = this.#profanityRegexMatchPartial.exec(joined)) !== null) {
-                        matches.push({
-                            word: match[0],
-                            start: match.index,
-                            end: match.index + match[0].length
-                        });
-                    }
-
-                    if (matches.length > 0) {
-                        const newParts = [];
-                        let lastEnd = 0;
-
-                        for (const match of matches) {
-                            // Add original words before this profanity (preserving case)
-                            if (match.start > lastEnd) {
-                                const beforeText = joined.substring(lastEnd, match.start);
-                                if (beforeText) {
-                                    // Map back to original words
-                                    let charCount = lastEnd;
-                                    for (const word of sequence) {
-                                        if (charCount >= match.start) break;
-                                        if (charCount + word.length <= match.start) {
-                                            newParts.push(word);
-                                            charCount += word.length;
-                                        } else {
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-
-                            // Add profanity word
-                            newParts.push(match.word);
-                            lastEnd = match.end;
-                        }
-
-                        // Add remaining text after last profanity (including punctuation)
-                        if (lastEnd < joined.length) {
-                            const afterText = joined.substring(lastEnd);
-                            if (afterText && newParts.length > 0) {
-                                newParts[newParts.length - 1] += afterText;
-                            }
-                        }
-
-                        result.splice(i, sequence.length, ...newParts);
-                        i += newParts.length;
-                        continue;
-                    }
-                }
-
-                i = j;
+                words.splice(start, i - start, ...parts);
+                i = start + parts.length - 1;
             } else {
-                i++;
+                i--; // Adjust for outer loop increment
             }
         }
 
-        return result.join(' ');
+        return words.join(' ');
     }
 
     /**
