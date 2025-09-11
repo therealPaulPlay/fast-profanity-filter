@@ -25,8 +25,8 @@ async function runTests() {
     result = await censor('This is DAMN');
     assert(result === 'This is ****', 'Should handle mixed case profanity');
 
-    result = await censor('Hey, this pen is amazing! I love your hellish dog, even though he kinda s u c k s at basketball and BanalStuffLol.');
-    assert(result === 'Hey, this pen is amazing! I love your hellish dog, even though he kinda s u c k s at basketball and BanalStuffLol.', 'Should keep normal sentences the same');
+    result = await censor('Hey, this pen is amazing! I love your hellish dog-dog, even _though -he kinda s u c k s at basketball and BanalStuffLol.');
+    assert(result === 'Hey, this pen is amazing! I love your hellish dog-dog, even _though -he kinda s u c k s at basketball and BanalStuffLol.', 'Should keep normal sentences the same');
 
     result = await censor('This is a nice clean sentence');
     assert(result === 'This is a nice clean sentence', 'Should preserve clean text');
@@ -54,6 +54,27 @@ async function runTests() {
 
     result = await censor('BanalLover455');
     assert(result === 'BanalLover455', 'Should not censor partially profane parts in user names');
+
+    result = await censor('Bad-Bitch');
+    assert(result === 'Bad-*****', 'Should censor bad words separated by dashes');
+
+    result = await censor('Bad_Bitch!');
+    assert(result === 'Bad_*****!', 'Should censor bad words separated by underscores');
+
+    result = await censor('Bad Bi-tch');
+    assert(result === 'Bad *****', 'Should censor bad words split up with dashes');
+
+    result = await censor('Bad-Bi-tch-is-cool');
+    assert(result === 'Bad-*****-is-cool', 'Should censor bad words that are part of dash chains');
+
+    result = await censor('Bad_Bi_tch_is_cool');
+    assert(result === 'Bad_*****_is_cool', 'Should censor bad words that are part of dash chains');
+
+    result = await censor('Hey, that Bad_Bi_tch_is_cool what do you think, favorite shit?');
+    assert(result === 'Hey, that Bad_*****_is_cool what do you think, favorite ****?', 'Should censor bad words that are part of dash chains in sentences');
+
+    result = await censor('Bad_Te_ch_is-cool');
+    assert(result === 'Bad_Te_ch_is-cool', 'Should leave clean underscore chains intact');
 
     // Test check() - this is where the bug shows up
     console.log('\n=== Testing check() ===');

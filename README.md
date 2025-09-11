@@ -30,11 +30,12 @@ const isClean = await checkStrict('Hello 你好'); // false
 
 ## Detection Examples
 
-| Input | Output | Detects |
+| Input | Output | Detection info |
 |-------|--------|---------|
-| `"this is a badword"` | `"this is a *******"` | Basic words |
+| `"this is a badword"` | `"this is a *******"` | Basic curse words |
 | `"BADWorD"` | `"*******"` | Case variations |
-| `"b a d w o r d"` | `"*******"` | Spaced bypass |
-| `"ba d wo r d"` | `"*******"` | Advanced spaced bypass, even with uncommon spaces like hairspaces |
-| `"BadwordUser123"` | `"*******User123"` | camelCase or PascalCase + numbers |
-| `"This banal pen is good"` | `"This banal pen is good"` | No false positives |
+| `"b a d w o r d"` | `"*******"` | Weird spacing |
+| `"ba d wo r d"` | `"*******"` | Advanced weird spacing, even with uncommon spaces like hairspaces |
+| `"Hey, bad-wo_rd!"` | `"*******"` | Dash, hypen, underscore obfuscation |
+| `"BadwordUser123"` | `"*******User123"` | camelCase or PascalCase, even with numbers |
+| `"This banal pen is super-good"` | `"This banal pen is super-good"` | No false positives |

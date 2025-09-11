@@ -36,7 +36,8 @@ class fastProfanityFilter {
     #processText(text) {
         const cleaned = this.#cleanIllegalWhitespace(text);
         const spacedFixed = this.#concatenateSpacedProfanity(cleaned);
-        return this.#detectCamelCaseProfanity(spacedFixed);
+        const camelFixed = this.#detectCamelCaseProfanity(spacedFixed);
+        return this.#detectSeparatedProfanity(camelFixed);
     }
 
     // Detect profanity in text written like BadCurseWord, or Badword7
@@ -53,7 +54,44 @@ class fastProfanityFilter {
         });
     }
 
-    // Detect profanity written like "B a d W o r d" or "Ba d Wo rd"
+    // Detect profanity separated by non-letter characters like underscores, em-dashes, etc.
+    #detectSeparatedProfanity(text) {
+        return text.replace(/\w+(?:[_\u2013\u2014-]+\w+)+/g, match => {
+            const parts = match.split(/[_\u2013\u2014-]+/);
+            const separators = match.match(/[_\u2013\u2014-]+/g) || [];
+
+            // First, check individual parts for direct profanity
+            const processed = parts.map(part => {
+                const matches = this.#getPartialMatches(part);
+                return matches.length > 0 ? '*'.repeat(part.length) : part;
+            });
+
+            // If no individual profanity found, check for split profanity in adjacent pairs only
+            if (processed.every((p, i) => p === parts[i])) {
+                for (let i = 0; i < parts.length - 1; i++) {
+                    const combined = (parts[i] + parts[i + 1]).toLowerCase();
+                    if (this.#getPartialMatches(combined).length > 0) {
+                        // Mark these two parts as one profanity unit
+                        const totalLength = parts[i].length + parts[i + 1].length;
+                        processed[i] = '*'.repeat(totalLength);
+                        processed[i + 1] = ''; // Remove the second part
+                        break; // Stop after finding first split profanity
+                    }
+                }
+            }
+
+            // Reconstruct, skipping empty parts
+            let result = processed[0];
+            for (let i = 1; i < processed.length; i++) {
+                if (processed[i] !== '') {
+                    result += separators[Math.min(i - 1, separators.length - 1)] + processed[i];
+                }
+            }
+            return result;
+        });
+    }
+
+    // Find profanity written like "B a d W o r d" or "Ba d Wo rd" and concatenate them to "BadWord
     #concatenateSpacedProfanity(text) {
         const words = text.split(/\s+/);
 
