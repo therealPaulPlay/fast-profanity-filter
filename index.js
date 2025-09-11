@@ -8,23 +8,16 @@ class fastProfanityFilter {
     async #loadCheckProfanityRegex() {
         if (!this.#profanityRegex) {
             try {
-                let data;
-                if (typeof window !== 'undefined') {
-                    const response = await fetch('./profanity-list.json');
-                    data = await response.json();
-                } else {
-                    const module = await import('./profanity-list.json', { with: { type: 'json' } });
-                    data = module.default;
-                }
+                const data = typeof window !== 'undefined'
+                    ? await (await fetch('./profanity-list.json')).json()
+                    : (await import('./profanity-list.json', { with: { type: 'json' } })).default;
+
                 const escaped = data.map(word => word.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'));
                 this.#profanityRegex = new RegExp(`\\b(${escaped.join('|')})\\b`, 'gi');
                 this.#profanityRegexMatchPartial = new RegExp(`(${escaped.join('|')})`, 'gi');
             } catch (error) {
                 console.error('Error loading profanity list:', error);
             }
-        } else {
-            this.#profanityRegex.lastIndex = 0;
-            this.#profanityRegexMatchPartial.lastIndex = 0;
         }
     }
 
@@ -33,25 +26,30 @@ class fastProfanityFilter {
         return text.replace(this.#illegalWhitespace, ' ');
     }
 
+    // Helper to safely use partial regex with automatic reset
+    #getPartialMatches(text) {
+        this.#profanityRegexMatchPartial.lastIndex = 0;
+        return [...text.matchAll(this.#profanityRegexMatchPartial)];
+    }
+
+    // Process text through all detection methods
+    #processText(text) {
+        const cleaned = this.#cleanIllegalWhitespace(text);
+        const spacedFixed = this.#concatenateSpacedProfanity(cleaned);
+        return this.#detectCamelCaseProfanity(spacedFixed);
+    }
+
     // Detect profanity in text written like BadCurseWord, or Badword7
     #detectCamelCaseProfanity(text) {
         // Handle both camelCase, (letter-to-uppercase) PascalCase AND letter-to-number transitions
         return text.replace(/\b\w*(?:[a-z][A-Z]|\w\d)\w*\b/g, word => {
             const separated = word.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/([a-zA-Z])(\d)/g, '$1 $2');
-            const words = separated.split(/\s+/);
 
-            const processedWords = words.map(w => {
-                this.#profanityRegexMatchPartial.lastIndex = 0;
-                const matches = [...w.matchAll(this.#profanityRegexMatchPartial)];
-                for (const match of matches) {
-                    if (match.index === 0 || !/\w/.test(w[match.index - 1])) {
-                        return w.replace(match[0], '*'.repeat(match[0].length));
-                    }
-                }
-                return w;
-            });
-
-            return processedWords.join('');
+            return separated.split(/\s+/).map(w => {
+                const matches = this.#getPartialMatches(w);
+                const match = matches.find(m => m.index === 0 || !/\w/.test(w[m.index - 1]));
+                return match ? w.replace(match[0], '*'.repeat(match[0].length)) : w;
+            }).join('');
         });
     }
 
@@ -68,7 +66,7 @@ class fastProfanityFilter {
 
             const sequence = words.slice(start, i);
             const joined = sequence.join('').toLowerCase();
-            const matches = [...joined.matchAll(this.#profanityRegexMatchPartial)];
+            const matches = this.#getPartialMatches(joined);
 
             if (matches.length > 0) {
                 const parts = [];
@@ -77,8 +75,7 @@ class fastProfanityFilter {
                 matches.forEach(match => {
                     let charCount = pos;
                     sequence.forEach(word => {
-                        if (charCount >= match.index) return;
-                        if (charCount + word.length <= match.index) {
+                        if (charCount < match.index && charCount + word.length <= match.index) {
                             parts.push(word);
                             charCount += word.length;
                         }
@@ -109,10 +106,9 @@ class fastProfanityFilter {
         if (!text || typeof text !== 'string') return text || '';
         await this.#loadCheckProfanityRegex();
         try {
-            const cleaned = this.#cleanIllegalWhitespace(text);
-            const spacedFixed = this.#concatenateSpacedProfanity(cleaned);
-            const camelFixed = this.#detectCamelCaseProfanity(spacedFixed);
-            return camelFixed.replace(this.#profanityRegex, match => '*'.repeat(match.length));
+            const processed = this.#processText(text);
+            this.#profanityRegex.lastIndex = 0;
+            return processed.replace(this.#profanityRegex, match => '*'.repeat(match.length));
         } catch (error) {
             console.error("Error censoring text:", error);
             return text;
@@ -145,8 +141,7 @@ class fastProfanityFilter {
      */
     async checkStrict(text) {
         if (!text || typeof text !== 'string') return text === '';
-        if (!this.#strictPattern.test(text)) return false;
-        return await this.check(text);
+        return this.#strictPattern.test(text) && await this.check(text);
     }
 }
 

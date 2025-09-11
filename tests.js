@@ -98,6 +98,9 @@ async function runTests() {
     result = await filter.check('Nigger455');
     assert(result === false, 'Should reject profane words of user names that include numbers without spaces');
 
+    result = await filter.check('GoodBanaPerson1');
+    assert(result === true, 'Should accept user names with camelCase and partial profanity');
+
     // Test checkStrict()
     console.log('\n=== Testing checkStrict() ===');
 
