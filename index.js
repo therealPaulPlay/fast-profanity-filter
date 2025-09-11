@@ -21,78 +21,15 @@ class fastProfanityFilter {
         }
     }
 
-    // Remove hairspaces and other thin spaces
-    #cleanIllegalWhitespace(text) {
-        return text.replace(this.#illegalWhitespace, ' ');
-    }
-
-    // Helper to safely use partial regex with automatic reset
+    // E.g. get "anal" in banal
     #getPartialMatches(text) {
         this.#profanityRegexMatchPartial.lastIndex = 0;
         return [...text.matchAll(this.#profanityRegexMatchPartial)];
     }
 
-    // Process text through all detection methods
-    #processText(text) {
-        const cleaned = this.#cleanIllegalWhitespace(text);
-        const spacedFixed = this.#concatenateSpacedProfanity(cleaned);
-        const camelFixed = this.#detectCamelCaseProfanity(spacedFixed);
-        return this.#detectSeparatedProfanity(camelFixed);
-    }
-
-    // Detect profanity in text written like BadCurseWord, or Badword7
-    #detectCamelCaseProfanity(text) {
-        // Handle both camelCase, (letter-to-uppercase) PascalCase AND letter-to-number transitions
-        return text.replace(/\b\w*(?:[a-z][A-Z]|\w\d)\w*\b/g, word => {
-            const separated = word.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/([a-zA-Z])(\d)/g, '$1 $2');
-
-            return separated.split(/\s+/).map(w => {
-                const matches = this.#getPartialMatches(w);
-                const match = matches.find(m => m.index === 0 || !/\w/.test(w[m.index - 1]));
-                return match ? w.replace(match[0], '*'.repeat(match[0].length)) : w;
-            }).join('');
-        });
-    }
-
-    // Detect profanity separated by non-letter characters like underscores, em-dashes, etc.
-    #detectSeparatedProfanity(text) {
-        return text.replace(/\w+(?:[_\u2013\u2014-]+\w+)+/g, match => {
-            const parts = match.split(/[_\u2013\u2014-]+/);
-            const separators = match.match(/[_\u2013\u2014-]+/g) || [];
-
-            // First, check individual parts for direct profanity
-            const processed = parts.map(part => {
-                const matches = this.#getPartialMatches(part);
-                return matches.length > 0 ? '*'.repeat(part.length) : part;
-            });
-
-            // If no individual profanity found, check for split profanity in adjacent pairs only
-            if (processed.every((p, i) => p === parts[i])) {
-                for (let i = 0; i < parts.length - 1; i++) {
-                    const combined = (parts[i] + parts[i + 1]).toLowerCase();
-                    if (this.#getPartialMatches(combined).length > 0) {
-                        // Mark these two parts as one profanity unit
-                        const totalLength = parts[i].length + parts[i + 1].length;
-                        processed[i] = '*'.repeat(totalLength);
-                        processed[i + 1] = ''; // Remove the second part
-                        break; // Stop after finding first split profanity
-                    }
-                }
-            }
-
-            // Reconstruct, skipping empty parts
-            let result = processed[0];
-            for (let i = 1; i < processed.length; i++) {
-                if (processed[i] !== '') {
-                    result += separators[Math.min(i - 1, separators.length - 1)] + processed[i];
-                }
-            }
-            return result;
-        });
-    }
-
-    // Find profanity written like "B a d W o r d" or "Ba d Wo rd" and concatenate them to "BadWord
-    #concatenateSpacedProfanity(text) {
+    // Universal split profanity handler - works for spaces, dashes, underscores
+    #normalizeSplitText(text) {
+        // Handle spaced profanity - find sequences of short words only
         const words = text.split(/\s+/);
 
         for (let i = 0; i < words.length; i++) {
@@ -100,13 +37,14 @@ class fastProfanityFilter {
 
             const start = i;
             while (i < words.length && words[i].length <= 2 && words[i].length > 0) i++;
-            if (i - start < 3) continue; // Continue for small word parts (1-2 letters, not for long words)
+            if (i - start < 3) continue; // Need at least 3 consecutive short words
 
             const sequence = words.slice(start, i);
             const joined = sequence.join('').toLowerCase();
             const matches = this.#getPartialMatches(joined);
 
-            if (matches.length > 0) {
+            if (matches.length) {
+                // Reconstruct with profanity replaced but spacing preserved
                 const parts = [];
                 let pos = 0;
 
@@ -122,9 +60,8 @@ class fastProfanityFilter {
                     pos = match.index + match[0].length;
                 });
 
-                if (pos < joined.length && parts.length) {
+                if (pos < joined.length && parts.length)
                     parts[parts.length - 1] += joined.substring(pos);
-                }
 
                 words.splice(start, i - start, ...parts);
                 i = start + parts.length - 1;
@@ -133,7 +70,43 @@ class fastProfanityFilter {
             }
         }
 
-        return words.join(' ');
+        text = words.join(' ');
+
+        // Handle dash/underscore separated profanity
+        return text.replace(/\w+[_\u2013\u2014-]+(?:\w+[_\u2013\u2014-]+)*\w+/g, match => {
+            const parts = match.split(/([_\u2013\u2014-]+)/);
+            const words = parts.filter((_, i) => i % 2 === 0); // odd indices are separators
+            const seps = parts.filter((_, i) => i % 2 === 1);
+
+            // Check individual words, then adjacent pairs
+            const processed = words.map(word => this.#getPartialMatches(word).length ? '*'.repeat(word.length) : word);
+
+            if (processed.every((p, i) => p === words[i])) { // no individual matches
+                for (let i = 0; i < words.length - 1; i++) {
+                    if (this.#getPartialMatches(words[i] + words[i + 1]).length) {
+                        processed[i] = '*'.repeat(words[i].length + words[i + 1].length);
+                        processed[i + 1] = '';
+                        break;
+                    }
+                }
+            }
+
+            // Rebuild with separators
+            return processed.reduce((acc, word, i) =>
+                acc + (word && i > 0 ? seps[i - 1] || '' : '') + word, '');
+        });
+    }
+
+    #handleCamelCase(text) {
+        return text.replace(/\b\w*(?:[a-z][A-Z]|\w\d)\w*\b/g, word => {
+            return word.replace(/([a-z])([A-Z])/g, '$1 $2')
+                .replace(/([a-zA-Z])(\d)/g, '$1 $2')
+                .split(/\s+/)
+                .map(w => {
+                    const match = this.#getPartialMatches(w).find(m => m.index === 0 || !/\w/.test(w[m.index - 1]));
+                    return match ? w.replace(match[0], '*'.repeat(match[0].length)) : w;
+                }).join('');
+        });
     }
 
     /**
@@ -144,7 +117,11 @@ class fastProfanityFilter {
         if (!text || typeof text !== 'string') return text || '';
         await this.#loadCheckProfanityRegex();
         try {
-            const processed = this.#processText(text);
+            const processed = this.#handleCamelCase(
+                this.#normalizeSplitText(
+                    text.replace(this.#illegalWhitespace, ' ')
+                )
+            );
             this.#profanityRegex.lastIndex = 0;
             return processed.replace(this.#profanityRegex, match => '*'.repeat(match.length));
         } catch (error) {
@@ -161,11 +138,8 @@ class fastProfanityFilter {
     async check(text) {
         if (!text || typeof text !== 'string') return text === '';
         try {
-            // Normalize the original text first to account for illegal whitespace
             await this.#loadCheckProfanityRegex();
-            const normalized = this.#cleanIllegalWhitespace(text);
-            const censored = await this.censor(text);
-            return normalized === censored;
+            return text.replace(this.#illegalWhitespace, ' ') === await this.censor(text);
         } catch (error) {
             console.error("Error checking text:", error);
             return false;
@@ -183,10 +157,7 @@ class fastProfanityFilter {
     }
 }
 
-// Single shared instance
 const instance = new fastProfanityFilter();
-
-// Export clean function interface
 export const censor = (text) => instance.censor(text);
 export const check = (text) => instance.check(text);
 export const checkStrict = (text) => instance.checkStrict(text);

@@ -32,7 +32,7 @@ const isClean = await checkStrict('Hello 你好'); // false
 
 | Input | Output | Detection info |
 |-------|--------|---------|
-| `"this is a badword"` | `"this is a *******"` | Basic curse words |
+| `"this is a badword"` | `"this is a *******"` | Description |
 | `"BADWorD"` | `"*******"` | Case variations |
 | `"b a d w o r d"` | `"*******"` | Weird spacing |
 | `"ba d wo r d"` | `"*******"` | Advanced weird spacing, even with uncommon spaces like hairspaces |

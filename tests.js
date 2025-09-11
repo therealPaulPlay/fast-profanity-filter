@@ -55,6 +55,9 @@ async function runTests() {
     result = await censor('BanalLover455');
     assert(result === 'BanalLover455', 'Should not censor partially profane parts in user names');
 
+    result = await censor('fuckLover455');
+    assert(result === '****Lover455', 'Should censor profane parts in camelCase user names');
+
     result = await censor('Bad-Bitch');
     assert(result === 'Bad-*****', 'Should censor bad words separated by dashes');
 
