@@ -28,7 +28,7 @@ const isClean = await checkStrict('Hello world!'); // true
 const isClean = await checkStrict('Hello 你好'); // false
 ```
 
-## Detection Examples
+## Detection examples
 
 | Input | Output | Detection info |
 |-------|--------|---------|
@@ -36,6 +36,7 @@ const isClean = await checkStrict('Hello 你好'); // false
 | `"BADWorD"` | `"*******"` | Case variations |
 | `"b a d w o r d"` | `"*******"` | Weird spacing |
 | `"ba d wo r d"` | `"*******"` | Advanced weird spacing, even with uncommon spaces like hairspaces |
-| `"Hey, bad-wo_rd!"` | `"*******"` | Dash, hypen, underscore obfuscation |
+| `"Hey, bad-wo_rd!"` | `"Hey, *******"` | Dash, hypen, underscore obfuscation |
+| `"Bad-word-is-not-good"` | `"*******-is-not-good"` | Advanced dash, underscore or hypen obfuscation |
 | `"BadwordUser123"` | `"*******User123"` | camelCase or PascalCase, even with numbers |
-| `"This banal pen is super-good"` | `"This banal pen is super-good"` | No false positives |
+| `"This banal pen is super-good! Y e a h"` | `"This banal pen is super-good! Y e a h"` | No false positives |

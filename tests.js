@@ -32,7 +32,7 @@ async function runTests() {
     assert(result === 'This is a nice clean sentence', 'Should preserve clean text');
 
     result = await censor('This is damn');
-    assert(result === 'This is ****', 'Should normalize illegal whitespace and censor');
+    assert(result === 'This is ****', 'Should handle non-standard whitespace and censor');
 
     result = await censor('banal and hellish are fine');
     assert(result === 'banal and hellish are fine', 'Should not match partial words');
@@ -94,11 +94,11 @@ async function runTests() {
     result = await check('This is DAMN text');
     assert(result === false, 'Should handle mixed case profanity');
 
-    result = await check('This is damn'); // With illegal whitespace
-    assert(result === false, 'Should normalize illegal whitespace before checking and block profanity');
+    result = await check('This is damn'); // With non-standard whitespace
+    assert(result === false, 'Should handle non-standard whitespace and block profanity');
 
-    result = await check('This is good'); // With illegal whitespace
-    assert(result === true, 'Should normalize illegal whitespace before checking and allow good words');
+    result = await check('This is good'); // With non-standard whitespace
+    assert(result === true, 'Should handle non-standard whitespace and allow good words');
 
     result = await check('');
     assert(result === true, 'Should handle empty strings');
