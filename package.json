@@ -1,0 +1,27 @@
+{
+  "name": "fast-profanity-filter",
+  "version": "1.0.0",
+  "description": "Fast and efficient profanity filtering that covers a wide range of words in English.",
+  "main": "index.js",
+  "scripts": {
+    "test": "node tests.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/therealPaulPlay/fast-profanity-filter.git"
+  },
+  "keywords": [
+    "profanity",
+    "filter",
+    "profanity",
+    "chat",
+    "multiplayer",
+    "language"
+  ],
+  "author": "PaulPlay",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/therealPaulPlay/fast-profanity-filter/issues"
+  },
+  "homepage": "https://github.com/therealPaulPlay/fast-profanity-filter#readme"
+}

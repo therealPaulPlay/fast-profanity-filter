@@ -33,31 +33,73 @@ class fastProfanityFilter {
 
     #concatenateSpacedProfanity(text) {
         const words = text.split(/\s+/);
+        let result = [...words];
         let i = 0;
 
-        while (i < words.length) {
-            if (words[i].length <= 2 && words[i].length > 0) {
-                // Collect consecutive short words
+        while (i < result.length) {
+            if (result[i].length <= 2 && result[i].length > 0) {
                 const sequence = [];
                 let j = i;
 
-                while (j < words.length && words[j].length <= 2 && words[j].length > 0) {
-                    sequence.push(words[j]);
+                while (j < result.length && result[j].length <= 2 && result[j].length > 0) {
+                    sequence.push(result[j]);
                     j++;
                 }
 
                 if (sequence.length >= 3) {
                     const joined = sequence.join('').toLowerCase();
 
-                    // Use partial regex to find the profanity word within the joined sequence
+                    // Find ALL profanity matches
+                    const matches = [];
+                    let match;
                     this.#profanityRegexMatchPartial.lastIndex = 0;
-                    const match = this.#profanityRegexMatchPartial.exec(joined);
+                    while ((match = this.#profanityRegexMatchPartial.exec(joined)) !== null) {
+                        matches.push({
+                            word: match[0],
+                            start: match.index,
+                            end: match.index + match[0].length
+                        });
+                    }
 
-                    if (match) {
-                        // Replace sequence with the ACTUAL profanity word found
-                        const newWords = [...words];
-                        newWords.splice(i, sequence.length, match[0]);
-                        return newWords.join(' ');
+                    if (matches.length > 0) {
+                        const newParts = [];
+                        let lastEnd = 0;
+
+                        for (const match of matches) {
+                            // Add original words before this profanity (preserving case)
+                            if (match.start > lastEnd) {
+                                const beforeText = joined.substring(lastEnd, match.start);
+                                if (beforeText) {
+                                    // Map back to original words
+                                    let charCount = lastEnd;
+                                    for (const word of sequence) {
+                                        if (charCount >= match.start) break;
+                                        if (charCount + word.length <= match.start) {
+                                            newParts.push(word);
+                                            charCount += word.length;
+                                        } else {
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Add profanity word
+                            newParts.push(match.word);
+                            lastEnd = match.end;
+                        }
+
+                        // Add remaining text after last profanity (including punctuation)
+                        if (lastEnd < joined.length) {
+                            const afterText = joined.substring(lastEnd);
+                            if (afterText && newParts.length > 0) {
+                                newParts[newParts.length - 1] += afterText;
+                            }
+                        }
+
+                        result.splice(i, sequence.length, ...newParts);
+                        i += newParts.length;
+                        continue;
                     }
                 }
 
@@ -67,7 +109,7 @@ class fastProfanityFilter {
             }
         }
 
-        return text;
+        return result.join(' ');
     }
 
     /**
