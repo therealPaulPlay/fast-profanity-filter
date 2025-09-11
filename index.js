@@ -4,6 +4,7 @@ class fastProfanityFilter {
     #illegalWhitespace = /[\u00A0\u1680\u2001-\u200A\u2028\u2029\u202F\u205F\u3000\uFEFF\u200B-\u200D\u2060\u2800]/g;
     #strictPattern = /^[a-zA-Z0-9\s.,!?'-]*$/;
 
+    // Create two regex patterns from the profanity list - one that matches full words, and one that matches partial profanity (e.g. banal -> includes anal)
     async #loadCheckProfanityRegex() {
         if (!this.#profanityRegex) {
             try {
@@ -27,11 +28,14 @@ class fastProfanityFilter {
         }
     }
 
+    // Remove hairspaces and other thin spaces
     #cleanIllegalWhitespace(text) {
         return text.replace(this.#illegalWhitespace, ' ');
     }
 
+    // Detect profanity in text written like BadCurseWord, or Badword7
     #detectCamelCaseProfanity(text) {
+        // Handle both camelCase, (letter-to-uppercase) PascalCase AND letter-to-number transitions
         return text.replace(/\b\w*(?:[a-z][A-Z]|\w\d)\w*\b/g, word => {
             const separated = word.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/([a-zA-Z])(\d)/g, '$1 $2');
             const words = separated.split(/\s+/);
@@ -51,6 +55,7 @@ class fastProfanityFilter {
         });
     }
 
+    // Detect profanity written like "B a d W o r d" or "Ba d Wo rd"
     #concatenateSpacedProfanity(text) {
         const words = text.split(/\s+/);
 
@@ -59,7 +64,7 @@ class fastProfanityFilter {
 
             const start = i;
             while (i < words.length && words[i].length <= 2 && words[i].length > 0) i++;
-            if (i - start < 3) continue;
+            if (i - start < 3) continue; // Continue for small word parts (1-2 letters, not for long words)
 
             const sequence = words.slice(start, i);
             const joined = sequence.join('').toLowerCase();

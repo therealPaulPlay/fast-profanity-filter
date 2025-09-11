@@ -36,7 +36,6 @@ async function runTests() {
     assert(result === 'This is ****', 'Should normalize illegal whitespace and censor');
 
     result = await filter.censor('banal and hellish are fine');
-    console.log(result)
     assert(result === 'banal and hellish are fine', 'Should not match partial words');
 
     result = await filter.censor('You are a b i t c h!');
