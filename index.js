@@ -9,7 +9,7 @@ class fastProfanityFilter {
         if (!this.#profanityRegex) {
             try {
                 const data = typeof window !== 'undefined'
-                    ? await (await fetch('./profanity-list.json')).json()
+                    ? await (await fetch(new URL('./profanity-list.json', import.meta.url))).json()
                     : (await import('./profanity-list.json', { with: { type: 'json' } })).default;
 
                 const escaped = data.map(word => word.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'));
