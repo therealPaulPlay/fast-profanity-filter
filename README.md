@@ -23,7 +23,8 @@ const text = await censor('This is a badword'); // "This is a *******"
 const isClean  = await check('Clean text'); // true
 const isClean = await check('Badword'); // false
 
-// Strict checking (only a-z, A-Z, 0-9, basic punctuation and regular symbols, but no letters from other alphabets, no emojis etc.)
+// Strict checking - only a-z, A-Z, 0-9, basic punctuation and regular symbols
+// No letters from other alphabets, no emojis etc.
 const isClean = await checkStrict('Hello world!'); // true
 const isClean = await checkStrict('Hello 你好'); // false
 ```
