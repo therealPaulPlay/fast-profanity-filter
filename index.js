@@ -1,24 +1,16 @@
+import profanityList from './profanity-list.js';
+
 class fastProfanityFilter {
     #profanityRegex;
     #profanityRegexMatchPartial;
     #illegalWhitespace = /[\u00A0\u1680\u2001-\u200A\u2028\u2029\u202F\u205F\u3000\uFEFF\u200B-\u200D\u2060\u2800]/g;
     #strictPattern = /^[a-zA-Z0-9\s.,!?'\-_@#()[\]{}""''<>&+=*%/:;~^$\\|–—`]*$/;
 
-    // Create two regex patterns from the profanity list - one that matches full words, and one that matches partial profanity (e.g. banal -> includes anal)
-    async #loadCheckProfanityRegex() {
-        if (!this.#profanityRegex) {
-            try {
-                const data = typeof window !== 'undefined'
-                    ? await (await fetch(new URL('./profanity-list.json', import.meta.url))).json()
-                    : (await import('./profanity-list.json', { with: { type: 'json' } })).default;
-
-                const escaped = data.map(word => word.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'));
-                this.#profanityRegex = new RegExp(`\\b(${escaped.join('|')})\\b`, 'gi');
-                this.#profanityRegexMatchPartial = new RegExp(`(${escaped.join('|')})`, 'gi');
-            } catch (error) {
-                console.error('Error loading profanity list:', error);
-            }
-        }
+    constructor() {
+        // Create two regex patterns from the profanity list - one that matches full words, and one that matches partial profanity (e.g. banal -> includes anal)
+        const escaped = profanityList.map(word => word.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'));
+        this.#profanityRegex = new RegExp(`\\b(${escaped.join('|')})\\b`, 'gi');
+        this.#profanityRegexMatchPartial = new RegExp(`(${escaped.join('|')})`, 'gi');
     }
 
     // E.g. get "anal" in banal
@@ -111,11 +103,10 @@ class fastProfanityFilter {
 
     /**
      * @param {string} text - Text to censor
-     * @returns {Promise<string>} censored text
+     * @returns {string} censored text
      */
-    async censor(text) {
+    censor(text) {
         if (!text || typeof text !== 'string') return text || '';
-        await this.#loadCheckProfanityRegex();
         try {
             const processed = this.#handleCamelCase(
                 this.#normalizeSplitText(
@@ -133,13 +124,12 @@ class fastProfanityFilter {
     /**
      * Check for profanity
      * @param {string} text - Text to check
-     * @returns {Promise<boolean>} true if approved, false if contains profanity
+     * @returns {boolean} true if approved, false if contains profanity
      */
-    async check(text) {
+    check(text) {
         if (!text || typeof text !== 'string') return text === '';
         try {
-            await this.#loadCheckProfanityRegex();
-            return text.replace(this.#illegalWhitespace, ' ') === await this.censor(text);
+            return text.replace(this.#illegalWhitespace, ' ') === this.censor(text);
         } catch (error) {
             console.error("Error checking text:", error);
             return false;
@@ -149,11 +139,11 @@ class fastProfanityFilter {
     /**
      * Strict check - allows common username/chat symbols and no profanity
      * @param {string} text - Text to check
-     * @returns {Promise<boolean>} true if approved, false if contains forbidden characters or profanity
+     * @returns {boolean} true if approved, false if contains forbidden characters or profanity
      */
-    async checkStrict(text) {
+    checkStrict(text) {
         if (!text || typeof text !== 'string') return text === '';
-        return this.#strictPattern.test(text) && await this.check(text);
+        return this.#strictPattern.test(text) && this.check(text);
     }
 }
 

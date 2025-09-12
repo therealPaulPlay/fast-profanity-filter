@@ -17,16 +17,16 @@ The library supports both Node.js and browser environments.
 import { censor, check, checkStrict } from 'fast-profanity-filter';
 
 // Censor profanity
-const text = await censor('This is a badword'); // "This is a *******"
+const text = censor('This is a badword'); // "This is a *******"
 
 // Check for profanity
-const isClean  = await check('Clean text'); // true
-const isClean = await check('Badword'); // false
+const isClean  = check('Clean text'); // true
+const isClean = check('Badword'); // false
 
 // Strict checking - only a-z, A-Z, 0-9, basic punctuation and regular symbols
 // No letters from other alphabets, no emojis etc.
-const isClean = await checkStrict('Hello world!'); // true
-const isClean = await checkStrict('Hello 你好'); // false
+const isClean = checkStrict('Hello world!'); // true
+const isClean = checkStrict('Hello 你好'); // false
 ```
 
 ## Detection examples
