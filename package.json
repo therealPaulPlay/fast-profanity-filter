@@ -1,6 +1,7 @@
 {
   "name": "fast-profanity-filter",
-  "version": "1.0.0",
+  "version": "0.0.1",
+  "type": "module",
   "description": "Fast and efficient profanity filtering that covers a wide range of words in English.",
   "main": "index.js",
   "scripts": {
