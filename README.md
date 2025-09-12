@@ -30,9 +30,9 @@ const isClean = await checkStrict('Hello 你好'); // false
 
 ## Detection examples
 
-| Input | Output | Detection info |
+| Input | Output | Description |
 |-------|--------|---------|
-| `"this is a badword"` | `"this is a *******"` | Description |
+| `"this is a badword"` | `"this is a *******"` | Basic profanity |
 | `"BADWorD"` | `"*******"` | Case variations |
 | `"b a d w o r d"` | `"*******"` | Weird spacing |
 | `"ba d wo r d"` | `"*******"` | Advanced weird spacing, even with uncommon spaces like hairspaces |
