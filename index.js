@@ -2,7 +2,7 @@ class fastProfanityFilter {
     #profanityRegex;
     #profanityRegexMatchPartial;
     #illegalWhitespace = /[\u00A0\u1680\u2001-\u200A\u2028\u2029\u202F\u205F\u3000\uFEFF\u200B-\u200D\u2060\u2800]/g;
-    #strictPattern = /^[a-zA-Z0-9\s.,!?'-]*$/;
+    #strictPattern = /^[a-zA-Z0-9\s.,!?'\-_@#()[\]{}""''<>&+=*%/:;~^$\\|–—`]*$/;
 
     // Create two regex patterns from the profanity list - one that matches full words, and one that matches partial profanity (e.g. banal -> includes anal)
     async #loadCheckProfanityRegex() {
@@ -147,7 +147,7 @@ class fastProfanityFilter {
     }
 
     /**
-     * Strict check - only allows approved characters (a-z, A-Z, 0-9, basic punctuation) and no profanity
+     * Strict check - allows common username/chat symbols and no profanity
      * @param {string} text - Text to check
      * @returns {Promise<boolean>} true if approved, false if contains forbidden characters or profanity
      */

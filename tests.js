@@ -133,23 +133,17 @@ async function runTests() {
     result = await checkStrict('This is damn text');
     assert(result === false, 'Should return false for approved characters with profanity');
 
-    result = await checkStrict('This is ###ü damn text');
-    assert(result === false, 'Should return false for approved characters with profanity');
-
     result = await checkStrict('This is good 你好');
     assert(result === false, 'Should return false for non-Latin characters');
 
     result = await checkStrict('This is good 😀');
     assert(result === false, 'Should return false for emojis');
 
-    result = await checkStrict('This is good @#$%');
-    assert(result === false, 'Should return false for special symbols');
+    result = await checkStrict('This is good @#%_-!?–,+!.()[]{}&%=""``/|\:');
+    assert(result === true, 'Should allow some special symbols that are common in messages');
 
     result = await checkStrict("Hello, world! How are you? I'm fine.");
     assert(result === true, 'Should allow basic punctuation');
-
-    result = await checkStrict('Hello — world');
-    assert(result === false, 'Should reject advanced Unicode punctuation');
 
     result = await checkStrict('');
     assert(result === true, 'Should handle empty strings in strict mode');
