@@ -1,7 +1,7 @@
 # Fast Profanity Filter
 
 Fast profanity filter with advanced bypass detection for spaced characters, camelCase or PascalCase, and Unicode tricks.
-Includes >3000 English curse words.
+Includes >2000 English curse words.
 
 ## Installation
 
