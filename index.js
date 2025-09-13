@@ -19,7 +19,7 @@ class fastProfanityFilter {
         return [...text.matchAll(this.#profanityRegexMatchPartial)];
     }
 
-    // Universal split profanity handler - works for spaces, dashes, underscores
+    // Universal split profanity handler - works for spaces, dashes, underscores, dots
     #normalizeSplitText(text) {
         // Handle spaced profanity - find sequences of short words only
         const words = text.split(/\s+/);
@@ -64,22 +64,36 @@ class fastProfanityFilter {
 
         text = words.join(' ');
 
-        // Handle dash/underscore separated profanity
-        return text.replace(/\w+[_\u2013\u2014-]+(?:\w+[_\u2013\u2014-]+)*\w+/g, match => {
-            const parts = match.split(/([_\u2013\u2014-]+)/);
+        // Handle dash/underscore/dot/asterisk separated profanity
+        return text.replace(/\w+[_.*\u2013\u2014-]+(?:\w+[_.*\u2013\u2014-]+)*\w+/g, match => {
+            const parts = match.split(/([_.*\u2013\u2014-]+)/);
             const words = parts.filter((_, i) => i % 2 === 0); // odd indices are separators
             const seps = parts.filter((_, i) => i % 2 === 1);
 
-            // Check individual words, then adjacent pairs
             const processed = words.map(word => this.#getPartialMatches(word).length ? '*'.repeat(word.length) : word);
 
-            if (processed.every((p, i) => p === words[i])) { // no individual matches
+            // If no individual matches, check pairs then full sequence
+            if (processed.every((p, i) => p === words[i])) {
+                // Check adjacent pairs
                 for (let i = 0; i < words.length - 1; i++) {
                     if (this.#getPartialMatches(words[i] + words[i + 1]).length) {
                         processed[i] = '*'.repeat(words[i].length + words[i + 1].length);
                         processed[i + 1] = '';
                         break;
                     }
+                }
+
+                // Check full sequence if still no matches
+                if (processed.every((p, i) => p === words[i])) {
+                    const joinedWord = words.join('').toLowerCase();
+                    this.#getPartialMatches(joinedWord).forEach(match => {
+                        let pos = 0;
+                        words.forEach((word, i) => {
+                            if (match.index < pos + word.length && match.index + match[0].length > pos)
+                                processed[i] = '*'.repeat(word.length);
+                            pos += word.length;
+                        });
+                    });
                 }
             }
 

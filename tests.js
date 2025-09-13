@@ -19,10 +19,10 @@ async function runTests() {
     // Test censor()
     console.log('=== Testing censor() ===');
 
-    let result = censor('This is damn and bitch');
+    let result = censor('This is fuck and bitch');
     assert(result === 'This is **** and *****', 'Should censor profanity with asterisks');
 
-    result = censor('This is DAMN');
+    result = censor('This is FUCK');
     assert(result === 'This is ****', 'Should handle mixed case profanity');
 
     result = censor('Hey, this pen is amazing! I love your hellish dog-dog, even _though -he kinda s u c k s at basketball and BanalStuffLol.');
@@ -31,7 +31,7 @@ async function runTests() {
     result = censor('This is a nice clean sentence');
     assert(result === 'This is a nice clean sentence', 'Should preserve clean text');
 
-    result = censor('This is damn');
+    result = censor('This is fuck');
     assert(result === 'This is ****', 'Should handle non-standard whitespace and censor');
 
     result = censor('banal and hellish are fine');
@@ -73,6 +73,15 @@ async function runTests() {
     result = censor('Bad_Bi_tch_is_cool');
     assert(result === 'Bad_*****_is_cool', 'Should censor bad words that are part of dash chains');
 
+    result = censor('F-u-c-k');
+    assert(result === '*-*-*-*', 'Should censor curse words obfuscated with dashes');
+
+    result = censor('F*u*c*k');
+    assert(result === '*******', 'Should censor curse words obfuscated with stars');
+
+    result = censor('F.u.c.k');
+    assert(result === '*.*.*.*', 'Should censor curse words obfuscated with dots');
+
     result = censor('Hey, that Bad_Bi_tch_is_cool what do you think, favorite shit?');
     assert(result === 'Hey, that Bad_*****_is_cool what do you think, favorite ****?', 'Should censor bad words that are part of dash chains in sentences');
 
@@ -82,19 +91,19 @@ async function runTests() {
     // Test check() - this is where the bug shows up
     console.log('\n=== Testing check() ===');
 
-    result = check('This is damn text');
+    result = check('This is fuck text');
     assert(result === false, 'Should return false for text with profanity');
 
-    result = check('This is damn text');
+    result = check('This is fuck text');
     assert(result === false, 'Should again return false for text with profanity');
 
     result = check('This is good text');
     assert(result === true, 'Should return true for clean text');
 
-    result = check('This is DAMN text');
+    result = check('This is FUCK text');
     assert(result === false, 'Should handle mixed case profanity');
 
-    result = check('This is damn'); // With non-standard whitespace
+    result = check('This is fuck'); // With non-standard whitespace
     assert(result === false, 'Should handle non-standard whitespace and block profanity');
 
     result = check('This is good'); // With non-standard whitespace
@@ -130,7 +139,7 @@ async function runTests() {
     result = checkStrict('This is good text with numbers 123.');
     assert(result === true, 'Should return true for approved characters only');
 
-    result = checkStrict('This is damn text');
+    result = checkStrict('This is fuck text');
     assert(result === false, 'Should return false for approved characters with profanity');
 
     result = checkStrict('This is good 你好');
