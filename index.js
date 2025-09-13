@@ -101,10 +101,6 @@ class fastProfanityFilter {
         });
     }
 
-    /**
-     * @param {string} text - Text to censor
-     * @returns {string} censored text
-     */
     censor(text) {
         if (!text || typeof text !== 'string') return text || '';
         try {
@@ -121,11 +117,6 @@ class fastProfanityFilter {
         }
     }
 
-    /**
-     * Check for profanity
-     * @param {string} text - Text to check
-     * @returns {boolean} true if approved, false if contains profanity
-     */
     check(text) {
         if (!text || typeof text !== 'string') return text === '';
         try {
@@ -136,11 +127,6 @@ class fastProfanityFilter {
         }
     }
 
-    /**
-     * Strict check - allows common username/chat symbols and no profanity
-     * @param {string} text - Text to check
-     * @returns {boolean} true if approved, false if contains forbidden characters or profanity
-     */
     checkStrict(text) {
         if (!text || typeof text !== 'string') return text === '';
         return this.#strictPattern.test(text) && this.check(text);
@@ -148,6 +134,24 @@ class fastProfanityFilter {
 }
 
 const instance = new fastProfanityFilter();
+
+/**
+ * Censor profanity in a text with asterisks
+ * @param {string} text - Text to censor
+ * @returns {string} censored text
+ */
 export const censor = (text) => instance.censor(text);
+
+/**
+ * Check for profanity
+ * @param {string} text - Text to check
+ * @returns {boolean} true if clean, false if contains profanity
+ */
 export const check = (text) => instance.check(text);
+
+/**
+ * Strict check for profanity - allows common username/chat symbols and no profanity
+ * @param {string} text - Text to check
+ * @returns {boolean} true if clean, false if contains forbidden characters or profanity
+ */
 export const checkStrict = (text) => instance.checkStrict(text);
